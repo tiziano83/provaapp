@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Storage Example</title>
+
+    <script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+    <script type="text/javascript" charset="utf-8">
+
+    // Wait for device API libraries to load
+    //
+    document.addEventListener("deviceready", onDeviceReady, false);
+
+    // Populate the database
+    //
+    function populateDB(tx) {
+        //tx.executeSql('DROP TABLE IF EXISTS DEMO');
+        tx.executeSql('CREATE TABLE IF NOT EXISTS DEMO (id unique,cod,dex)');
+        //tx.executeSql('INSERT INTO DEMO (id, data) VALUES (1, "First row")');
+        //tx.executeSql('INSERT INTO DEMO (id, data) VALUES (2, "Second row")');
+    }
+
+    // Query the database
+    //
+    function queryDB(tx) {
+        tx.executeSql('SELECT * FROM DEMO', [], querySuccess, errorCB);
+    }
+
+    // Query the success callback
+    //
+    function querySuccess(tx, results) {
+        var len = results.rows.length;
+        console.log("DEMO table: " + len + " rows found.");
+        for (var i=0; i<len; i++){
+        	addRow(results.rows.item(i).id,results.rows.item(i).cod,results.rows.item(i).dex);
+        //	console.log("Row = " + i + " ID = " + results.rows.item(i).id + " cod =  " + results.rows.item(i).cod+);
+        }
+    }
+
+    // Transaction error callback
+    //
+    function errorCB(err) {
+        console.log("Error processing SQL: "+err.code);
+    }
+
+    // Transaction success callback
+    //
+    function successCB() {
+        var db = window.openDatabase("Database", "1.0", "Cordova Demo", 200000);
+        db.transaction(queryDB, errorCB);
+    }
+
+//inseriti da me    
+    function popola() {
+        var db = window.openDatabase("Database", "1.0", "Cordova Demo", 200000);
+        db.transaction(scrivi, errorCB);
+    }
+    function cancella() {
+        var db = window.openDatabase("Database", "1.0", "Cordova Demo", 200000);
+        db.transaction(cancella_riga, errorCB);
+    }
+
+    function scrivi(tx) {
+    	var codice = document.getElementById("cod").value.trim();
+    	var descri = document.getElementById("dex").value.trim();
+    	if(codice==""){
+    	  alert('Inserire codice');
+    	  return;
+    	}
+    	if(descri==""){
+      	  alert('Inserire descrizione');
+      	  return;
+      	}
+        tx.executeSql('SELECT MAX(id) as id FROM DEMO', [], queryok, errorCB);
+    }
+    
+    function queryok(tx, results) {
+    	var codice = document.getElementById("cod").value;
+    	var descri = document.getElementById("dex").value;
+        var len = results.rows.length;
+    	var idnew = 1;
+        if(len>0){
+    	  idnew = results.rows.item(0).id+1;
+        }
+        tx.executeSql('INSERT INTO DEMO (id, cod,dex) VALUES ('+idnew+', "'+codice+'","'+descri+'")');
+        deleteAllRow();
+        tx.executeSql('SELECT * FROM DEMO', [], querySuccess, errorCB);
+        document.getElementById("cod").value = "";
+        document.getElementById("dex").value = "";
+    }
+
+    //inseriti da me    
+    
+    // device APIs are available
+    //
+    function onDeviceReady() {
+        var db = window.openDatabase("Database", "1.0", "Cordova Demo", 200000);
+        db.transaction(populateDB, errorCB, successCB);
+    }
+
+    
+    function addRow(id,cod,dex) {
+    	 
+        var table = document.getElementById("dataTable");
+
+        var rowCount = table.rows.length;
+        var row = table.insertRow(rowCount);
+
+        var cell1 = row.insertCell(0);
+        var element1 = document.createElement("input");
+        element1.type = "checkbox";
+        element1.name="chkbox[]";
+        cell1.appendChild(element1);
+
+        var cell2 = row.insertCell(1);
+        cell2.innerHTML = id;
+
+        var cell3 = row.insertCell(2);
+        cell3.innerHTML = cod;
+        
+        var cell4 = row.insertCell(3);
+        cell4.innerHTML = dex;
+
+
+    }
+
+    function cancella_riga(tx) {
+        try {
+        var table = document.getElementById("dataTable");
+        var rowCount = table.rows.length;
+
+        for(var i=0; i<rowCount; i++) {
+            var row = table.rows[i];
+            var chkbox = row.cells[0].childNodes[0];
+            var id = row.cells[1].innerHTML;
+            if(null != chkbox && true == chkbox.checked) {
+            	//alert('id>'+id);
+                tx.executeSql('DELETE FROM DEMO WHERE id ='+id);
+                table.deleteRow(i);
+                rowCount--;
+                i--;
+            }
+
+
+        }
+        }catch(e) {
+            alert(e);
+        }
+    }    
+    function deleteAllRow() {
+        try {
+        var table = document.getElementById("dataTable");
+        var rowCount = table.rows.length;
+
+        for(var i=1; i<rowCount; i++) {
+                table.deleteRow(i);
+                rowCount--;
+                i--;
+        }
+
+
+        }catch(e) {
+            alert(e);
+        }
+    }    
+
+    </script>
+  </head>
+  <body>
+    <h1>Example</h1>
+    <p>Database</p>
+    <p><label>nome</label><input type="text" name="cod" id="cod" value=""></p>
+    <p><label>cognome</label><input type="text" name="dex" id="dex" value=""></p>
+    <input type="button" name="salva" value="salva" onclick="popola()">
+    <input type="button" name="cancella" value="cancella" onclick="cancella()">
+    <TABLE id="dataTable" width="80%" border="1">
+     <thead>
+      <th>c.</th>
+      <th>id</th>
+      <th>nome</th>
+      <th>cognome</th>
+     </thead>
+    </TABLE>    
+  </body>
+</html>
